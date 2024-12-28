@@ -1,10 +1,13 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 from airflow import DAG
 from docker.types import Mount
-from airflow.operators.python_operator import PythonOperator
-from airflow.operators.bash import BashOperator
+
 from airflow.providers.docker.operators.docker import DockerOperator
-import subprocess
+from airflow.utils.dates import days_ago
+from airflow.providers.airbyte.operators.airbyte import AirbyteTriggerSyncOperator
+
+
+CONN_ID = '8a56f091-7a5b-4776-8064-e2a7fe25cde3'
 
 default_args = {
     'owner': 'airflow',
@@ -13,27 +16,23 @@ default_args = {
     'email_on_retry': False,
 }
 
-def run_elt_script():
-    script_path = "/opt/airflow/elt/elt_script.py"
-    result = subprocess.run(["python3", script_path],
-                            capture_output=True, text=True)
-    if result.returncode != 0:
-        raise Exception(f"Script failed with error: {result.stderr}")
-    else:
-        print(result.stdout)
-
 dag = DAG(
     'elt_and_dbt',
     default_args=default_args,
-    description='An ELT Workflow with dbt',
-    start_date=datetime(2024,12,27),
+    description='An ELT workflow with dbt',
+    start_date=datetime(2024, 12, 28),
     catchup=False,
 )
 
-t1 = PythonOperator(
-    task_id='run_elt_script',
-    python_callable=run_elt_script,
-    dag=dag,
+
+# Need to change this to be an Airbyte DAG instead
+t1 = AirbyteTriggerSyncOperator(
+    task_id='airbyte_money_json_example',
+    airbyte_conn_id='airbyte',  # Airbyte Connection ID trong Airflow
+    connection_id='8a56f091-7a5b-4776-8064-e2a7fe25cde3',  # Connection ID từ Airbyte
+    asynchronous=False,
+    timeout=3600,
+    wait_seconds=3
 )
 
 t2 = DockerOperator(

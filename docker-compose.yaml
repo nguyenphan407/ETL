@@ -83,7 +83,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    user: root
     depends_on:
       - postgres
     networks:
@@ -115,7 +114,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    user: root
     depends_on:
       - postgres
     networks:
